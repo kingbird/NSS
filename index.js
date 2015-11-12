@@ -1,18 +1,18 @@
 var http = require('http'),
 	fs = require('fs'),
 	url = require('url'),
+	config = require('./config.js').config,
 	mineTypes = require('./mineTypes.js').types;
 
-var myServer = new http.Server,
-	ROOT_DIR = 'blog';
+var NSS = new http.Server;
 
-myServer.on('request', function(req, res) {
+NSS.on('request', function(req, res) {
 	var reqURL = url.parse(req.url),
 		filepath;
 	if(!reqURL.query && !reqURL.hash && reqURL.path.toString().indexOf('.') == -1 && reqURL.path.slice(-1) != '/') {
-		filepath = ROOT_DIR + reqURL.pathname + '/';
+		filepath = config.ROOT_DIR + reqURL.pathname + '/';
 	} else {
-		filepath = ROOT_DIR + reqURL.pathname;
+		filepath = config.ROOT_DIR + reqURL.pathname;
 	}
 
 	if(filepath.slice(-1) == '/') {
@@ -38,5 +38,6 @@ myServer.on('request', function(req, res) {
 			});
 		}
 	});
-}).listen(3333);
+});
+NSS.listen(3333);
 console.log('http is running at 3333');
