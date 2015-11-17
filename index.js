@@ -51,8 +51,6 @@ NSS.on('request', function(req, res) {
 			} else {
 				res.statusCode = 200;
 			}
-			console.log(NSS.getZipType);
-			console.log(this.getZipType);
 			res.setHeader('Server', 'NSS');
 			res.setHeader('Content-Encoding', zipType);
 			res.setHeader('Content-Type', mime);	
