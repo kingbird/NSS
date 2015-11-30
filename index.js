@@ -9,7 +9,6 @@ var NSS = new http.Server;
 
 
 NSS.getZipType = function(zipTypes) {
-	var zipTypes = zipTypes.toString();
 	if(zipTypes.indexOf('gzip') != -1) {
 		return 'gzip';
 	} else if (zipTypes.indexOf('deflate') != -1) {
@@ -44,15 +43,15 @@ NSS.on('request', function(req, res) {
 		} else {
 			var fileType = filepath.match(/\.[^\.]+$/g).toString().slice(1),
 				mime = mineTypes[fileType] || 'octet-stream',
-				zipType = NSS.getZipType(req.headers['accept-encoding']);
-				mTime = stats.mtime.toUTCString();
+				mTime = stats.mtime.toUTCString(),
+				zipType = (req.headers['accept-encoding']) &&  NSS.getZipType(req.headers['accept-encoding']);
 			if (req.headers['if-modified-since'] && req.headers['if-modified-since'] == mTime) {
 				res.statusCode = 304;
 			} else {
 				res.statusCode = 200;
 			}
 			res.setHeader('Server', 'NSS');
-			res.setHeader('Content-Encoding', zipType);
+			zipType && res.setHeader('Content-Encoding', zipType);
 			res.setHeader('Content-Type', mime);	
 			res.setHeader('Last-Modified', mTime);
 			res.setHeader('Cache-Control', 'max-age=' + config.MAX_AGE);
@@ -61,5 +60,5 @@ NSS.on('request', function(req, res) {
 		}
 	});
 });
-NSS.listen(3333);
-console.log('http is running at 3333');
+NSS.listen(80);
+console.log('http is running at 80');
