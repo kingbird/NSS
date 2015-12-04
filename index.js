@@ -29,9 +29,15 @@ NSS.on('request', function(req, res) {
 	}
 	if(filepath.slice(-1) == '/') {
 		filepath += 'index.html';
-	}
+	}	
+	console.log(filepath);
+	console.log(escape(filepath));
 
-	filepath = decodeURIComponent(filepath);
+	filepath = decodeURIComponent(escape(filepath));
+	if(filepath.indexOf('%%') != -1) {
+		filepath = filepath.replace('%%', '%25%');
+		filepath = decodeURIComponent(filepath);
+	}
 	fs.stat(filepath, function(err, stats) {
 		if(err) {
 			res.writeHead(404, {
@@ -41,7 +47,7 @@ NSS.on('request', function(req, res) {
 			res.write('404 not found');
 			res.end();
 		} else {
-			var fileType = filepath.match(/\.[^\.]+$/g).toString().slice(1),
+			var fileType = filepath.match(/\.[^\.]+$/g)[0].slice(1),
 				mime = mineTypes[fileType] || 'octet-stream',
 				mTime = stats.mtime.toUTCString(),
 				zipType = (req.headers['accept-encoding']) &&  NSS.getZipType(req.headers['accept-encoding']);
