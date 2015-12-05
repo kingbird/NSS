@@ -7,7 +7,6 @@ var http = require('http'),
 
 var NSS = new http.Server;
 
-
 NSS.getZipType = function(zipTypes) {
 	if(zipTypes.indexOf('gzip') != -1) {
 		return 'gzip';
@@ -29,15 +28,20 @@ NSS.on('request', function(req, res) {
 	}
 	if(filepath.slice(-1) == '/') {
 		filepath += 'index.html';
-	}	
-	console.log(filepath);
-	console.log(escape(filepath));
-
-	filepath = decodeURIComponent(escape(filepath));
-	if(filepath.indexOf('%%') != -1) {
-		filepath = filepath.replace('%%', '%25%');
-		filepath = decodeURIComponent(filepath);
 	}
+	try {
+		decodeURIComponent(filepath);
+	} catch(e) {
+		console.log(e);
+		res.writeHead(500, {
+			'Server': 'NSS',
+			'Content-Type': 'text/html'
+		});
+		res.write('500 bad request');
+		res.end();
+		return;
+	}
+	filepath = decodeURIComponent(filepath);
 	fs.stat(filepath, function(err, stats) {
 		if(err) {
 			res.writeHead(404, {
