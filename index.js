@@ -32,7 +32,6 @@ NSS.on('request', function(req, res) {
 	try {
 		decodeURIComponent(filepath);
 	} catch(e) {
-		console.log(e);
 		res.writeHead(500, {
 			'Server': 'NSS',
 			'Content-Type': 'text/html'
