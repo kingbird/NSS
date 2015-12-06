@@ -21,14 +21,10 @@ NSS.on('request', function(req, res) {
 	var reqURL = url.parse(req.url),
 		filepath;
 
-	if(!reqURL.query && !reqURL.hash && reqURL.path.toString().indexOf('.') == -1 && reqURL.path.slice(-1) != '/') {
-		filepath = config.ROOT_DIR + reqURL.pathname + '/';
-	} else {
-		filepath = config.ROOT_DIR + reqURL.pathname;
-	}
-	if(filepath.slice(-1) == '/') {
-		filepath += 'index.html';
-	}
+	(!reqURL.query && !reqURL.hash && reqURL.path.toString().indexOf('.') == -1 && reqURL.path.slice(-1) != '/') ? (filepath = config.ROOT_DIR + reqURL.pathname + '/') : (filepath = config.ROOT_DIR + reqURL.pathname);
+
+	filepath.slice(-1) == '/' ? filepath += 'index.html' : '';
+
 	try {
 		decodeURIComponent(filepath);
 	} catch(e) {
@@ -40,34 +36,28 @@ NSS.on('request', function(req, res) {
 		res.end();
 		return;
 	}
+
 	filepath = decodeURIComponent(filepath);
+
 	fs.stat(filepath, function(err, stats) {
+		res.setHeader('Server', 'NSS');
 		if(err) {
-			res.writeHead(404, {
-				'Server': 'NSS',
-				'Content-Type': 'text/html'
-			});
+			res.setHeader('Content-Type', 'text/html');
 			res.write('404 not found');
 			res.end();
 		} else {
 			var fileType = filepath.match(/\.[^\.]+$/g)[0].slice(1),
 				mime = mineTypes[fileType] || 'octet-stream',
 				mTime = stats.mtime.toUTCString(),
+				fileSorce = fs.createReadStream(filepath),
 				zipType = (req.headers['accept-encoding']) &&  NSS.getZipType(req.headers['accept-encoding']);
-			if (req.headers['if-modified-since'] && req.headers['if-modified-since'] == mTime) {
-				res.statusCode = 304;
-			} else {
-				res.statusCode = 200;
-			}
-			res.setHeader('Server', 'NSS');
+			(req.headers['if-modified-since'] && req.headers['if-modified-since'] == mTime) ? res.statusCode = 304 : res.statusCode = 200;
 			zipType && res.setHeader('Content-Encoding', zipType);
 			res.setHeader('Content-Type', mime);	
 			res.setHeader('Last-Modified', mTime);
 			res.setHeader('Cache-Control', 'max-age=' + config.MAX_AGE);
-			var bodyData = fs.createReadStream(filepath);
-			bodyData.pipe(zlib.createGzip()).pipe(res);
+			fileSorce.pipe(zlib.createGzip()).pipe(res);
 		}
 	});
 });
-NSS.listen(80);
-console.log('http is running at 80');
+NSS.listen(config.PORT);
