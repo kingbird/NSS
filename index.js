@@ -2,9 +2,19 @@ var http = require('http'),
 	fs = require('fs'),
 	url = require('url'),
 	zlib = require('zlib'),
+	events = require('events'),
+	emitter = new events.EventEmitter(),
 	config = require('./config.js').config,
 	mineTypes = require('./mineTypes.js').types;
 
+emitter.on('http500', function(res) {
+	res.writeHead(500, {
+		'Server': 'NSS',
+		'Content-Type': 'text/html'
+	});
+	res.write('500 bad request');
+	res.end();
+});
 var NSS = new http.Server;
 
 NSS.getZipType = function(zipTypes) {
@@ -28,12 +38,7 @@ NSS.on('request', function(req, res) {
 	try {
 		decodeURIComponent(filepath);
 	} catch(e) {
-		res.writeHead(500, {
-			'Server': 'NSS',
-			'Content-Type': 'text/html'
-		});
-		res.write('500 bad request');
-		res.end();
+		emitter.emit('http500', res);
 		return;
 	}
 
@@ -46,6 +51,11 @@ NSS.on('request', function(req, res) {
 			res.write('404 not found');
 			res.end();
 		} else {
+			if(!(filepath.match(/\.[^\.]+$/g))) {
+				console.log('url: '+reqURL);
+				emitter.emit('http500', res);
+				return;
+			}
 			var fileType = filepath.match(/\.[^\.]+$/g)[0].slice(1),
 				mime = mineTypes[fileType] || 'octet-stream',
 				mTime = stats.mtime.toUTCString(),
