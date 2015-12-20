@@ -2,6 +2,7 @@ var http = require('http'),
 	fs = require('fs'),
 	url = require('url'),
 	zlib = require('zlib'),
+	util = require('util'),
 	events = require('events'),
 	emitter = new events.EventEmitter(),
 	config = require('./config.js').config,
@@ -31,8 +32,7 @@ NSS.on('request', function(req, res) {
 	var reqURL = url.parse(req.url),
 		filepath;
 
-	(!reqURL.query && !reqURL.hash && reqURL.path.toString().indexOf('.') == -1 && reqURL.path.slice(-1) != '/') ? (filepath = config.ROOT_DIR + reqURL.pathname + '/') : (filepath = config.ROOT_DIR + reqURL.pathname);
-
+	(reqURL.pathname.indexOf('.') == -1 && reqURL.pathname.slice(-1) != '/') ? (filepath = config.ROOT_DIR + reqURL.pathname + '/') : (filepath = config.ROOT_DIR + reqURL.pathname);
 	filepath.slice(-1) == '/' ? filepath += 'index.html' : '';
 
 	try {
@@ -51,11 +51,6 @@ NSS.on('request', function(req, res) {
 			res.write('404 not found');
 			res.end();
 		} else {
-			if(!(filepath.match(/\.[^\.]+$/g))) {
-				console.log('url: '+reqURL);
-				emitter.emit('http500', res);
-				return;
-			}
 			var fileType = filepath.match(/\.[^\.]+$/g)[0].slice(1),
 				mime = mineTypes[fileType] || 'octet-stream',
 				mTime = stats.mtime.toUTCString(),
