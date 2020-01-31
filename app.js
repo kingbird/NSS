@@ -1,4 +1,4 @@
-var http = require('http'),
+var http2 = require('http2'),
 	fs = require('fs'),
 	url = require('url'),
 	zlib = require('zlib'),
@@ -8,6 +8,34 @@ var http = require('http'),
 	config = require('./config.js').config,
 	mineTypes = require('./mineTypes.js').types;
 
+var options = {
+	key: fs.readFileSync(config.ssl.key),
+	cert: fs.readFileSync(config.ssl.cert),
+ciphers: [
+        "ECDHE-RSA-AES128-GCM-SHA256",
+        "ECDHE-ECDSA-AES128-GCM-SHA256",
+        "ECDHE-RSA-AES256-GCM-SHA384",
+        "ECDHE-ECDSA-AES256-GCM-SHA384",
+        "DHE-RSA-AES128-GCM-SHA256",
+        "ECDHE-RSA-AES128-SHA256",
+        "DHE-RSA-AES128-SHA256",
+        "ECDHE-RSA-AES256-SHA384",
+        "DHE-RSA-AES256-SHA384",
+        "ECDHE-RSA-AES256-SHA256",
+        "DHE-RSA-AES256-SHA256",
+        "HIGH",
+        "!aNULL",
+        "!eNULL",
+        "!EXPORT",
+        "!DES",
+        "!RC4",
+        "!MD5",
+        "!PSK",
+        "!SRP",
+        "!CAMELLIA"
+    ].join(':')
+	};
+
 emitter.on('http500', function(res) {
 	res.writeHead(500, {
 		'Server': 'NSS',
@@ -16,7 +44,7 @@ emitter.on('http500', function(res) {
 	res.write('500 bad request');
 	res.end();
 });
-var NSS = new http.Server;
+var NSS = http2.createSecureServer(options);
 
 NSS.getZipType = function(zipTypes) {
 	if(zipTypes.indexOf('gzip') != -1) {
@@ -29,6 +57,18 @@ NSS.getZipType = function(zipTypes) {
 }
 
 NSS.on('request', function(req, res) {
+	//console.log('<<<<===============');
+	//console.log(req);
+	//console.log('================>>>');
+	var reqHost = req.headers.host;
+	if(toString.apply(reqHost) == '[object String]' && reqHost.indexOf('www.') != -1) {
+		//console.log(req.headers.host);
+		res.writeHead(302, {
+			'Location': 'https://' + reqHost.replace('www.', '') + req.url	
+		});
+		res.end();
+		return;
+	}
 	var reqURL = url.parse(req.url),
 		filepath;
 
@@ -56,10 +96,14 @@ NSS.on('request', function(req, res) {
 				mTime = stats.mtime.toUTCString(),
 				fileSorce = fs.createReadStream(filepath),
 				zipType = (req.headers['accept-encoding']) &&  NSS.getZipType(req.headers['accept-encoding']);
-			(req.headers['if-modified-since'] && req.headers['if-modified-since'] == mTime) ? res.statusCode = 304 : res.statusCode = 200;
+			//(req.headers['if-modified-since'] && req.headers['if-modified-since'] == mTime) ? res.statusCode = 304 : res.statusCode = 200;
+			//console.log(req.headers['if-modified-since'] == mTime);
 			zipType && res.setHeader('Content-Encoding', zipType);
 			res.setHeader('Content-Type', mime);	
 			res.setHeader('Last-Modified', mTime);
+		//	res.setHeader('Public-Key-Pins', 'pin-sha256="klO23nT2ehFDXCfx3eHTDRESMz3asj1muO+4aIdjiuY="; pin-sha256="Fbs+o+IxVNTHBpjNQYfX/TBnxPC+OWLYxQLEtqkrAfM="; max-age=2592000; includeSubDomains');
+			res.setHeader('strict-transport-security', 'max-age=0; includeSubDomains; preload');
+			res.setHeader('Content-Security-Policy', 'upgrade-insecure-requests');
 			res.setHeader('Cache-Control', 'max-age=' + config.MAX_AGE);
 			fileSorce.pipe(zlib.createGzip()).pipe(res);
 		}

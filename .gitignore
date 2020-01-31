@@ -1,1 +1,9 @@
-/blog
+.DS_Store
+node_modules/
+dist/
+pm2.json
+public/
+npm-debug.log
+yarn-error.log
+.idea/
+ssl/

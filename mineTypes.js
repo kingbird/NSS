@@ -80,6 +80,7 @@ exports.types = {
 	'moov': 'video/quicktime',
 	'movie': 'video/x-sgi-movie',
 	'au': 'audio/basic',
+	'svg': 'image/svg+xml',
 	'mp3': 'audio/mp3',
 	'snd': 'audio/basic',
 	'wav': 'audio/wav',
